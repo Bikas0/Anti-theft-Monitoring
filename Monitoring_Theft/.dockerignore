@@ -1,0 +1,13 @@
+
+*.pyo
+*.pyd
+
+*.sqlite3
+
+postgres
+*.db
+*.pyc
+__pycache__/
+venv/
+*.log
+

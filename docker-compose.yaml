@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  postgres:
+    container_name: postgresql
+    image: postgres:13.0-alpine
+    environment:
+      - POSTGRES_DB=Sysnova
+      - POSTGRES_USER=Sysnova
+      - POSTGRES_PASSWORD=Sysnova2025
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - ./postgres:/var/lib/postgresql/data  # Persist PostgreSQL data
+    ports:
+      - "54032:5432"  # Expose PostgreSQL port
+    restart: unless-stopped
+    networks:
+      - my_bridge_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "Sysnova"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+
+  pgadmin:
+    container_name: pgadmin
+    image: "dpage/pgadmin4:4.24"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: Sysnova@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: Sysnova
+    volumes:
+      - ./docker_pgadmin_servers.json:/pgadmin4/servers.json
+    ports:
+      - "5433:80"
+    restart: unless-stopped
+    networks:
+      - my_bridge_network
+
+
+  app_features:
+    container_name: features
+    build:
+      context: ./EMBEDDING  # Path to your backend Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"  # Expose backend app port
+    restart: unless-stopped
+    networks:
+      - my_bridge_network
+
+
+  monitoring:
+    container_name: anti_theft
+    build:
+      context: ./Monitoring_Theft  # Path to your backend Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./Monitoring_Theft:/app
+    environment:
+      - API_URL=http://features:8081
+    #   - CUDA_VISIBLE_DEVICES=0  # If you want to specify GPU usage
+    # runtime: nvidia  # Ensure to use GPU if available, remove if not using GPU
+    depends_on:
+      - app_features
+      - postgres
+    #   - nvidia-docker  # Ensure NVIDIA container runtime is available
+    
+    restart: unless-stopped
+    networks:
+      - my_bridge_network
+
+
+networks:
+  my_bridge_network:
+    driver: bridge
