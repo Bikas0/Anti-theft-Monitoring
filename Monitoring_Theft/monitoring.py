@@ -2,14 +2,17 @@ import os
 import cv2
 import json
 import uuid
-import base64
 import torch
+import httpx
+import base64
+import logging
 import uvicorn
 import tempfile
 import numpy as np
 from database import get_db
 from ultralytics import YOLO
 from pydantic import BaseModel
+from dotenv import load_dotenv
 from sqlalchemy.sql import text
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
@@ -17,12 +20,6 @@ from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta, time
 from sklearn.metrics.pairwise import cosine_similarity
 from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException
-import os
-from dotenv import load_dotenv
-import httpx
-from fastapi import APIRouter, UploadFile, File, Depends
-from sqlalchemy.orm import Session
-import logging
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
