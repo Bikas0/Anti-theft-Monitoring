@@ -2,17 +2,14 @@ import os
 import cv2
 import json
 import uuid
-import torch
-import httpx
 import base64
-import logging
+import torch
 import uvicorn
 import tempfile
 import numpy as np
 from database import get_db
 from ultralytics import YOLO
 from pydantic import BaseModel
-from dotenv import load_dotenv
 from sqlalchemy.sql import text
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
@@ -20,6 +17,12 @@ from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta, time
 from sklearn.metrics.pairwise import cosine_similarity
 from fastapi import FastAPI, APIRouter, UploadFile, File, Depends, HTTPException
+import os
+from dotenv import load_dotenv
+import httpx
+from fastapi import APIRouter, UploadFile, File, Depends
+from sqlalchemy.orm import Session
+import logging
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -63,7 +66,7 @@ def process_image(img_data, db: Session):
     print("="*70)
     print(max_similarity)
     print("="*70)
-    if max_similarity >= 0.45:
+    if max_similarity >= 0.60:
         index = np.argmax(similarity)
         return {'status': 'Success', 'Tracking Number': filenames[index].split(".")[0]}
     else:
@@ -72,9 +75,9 @@ def process_image(img_data, db: Session):
 
 def update_face_in_db(file_name, face_array, embedding, detection_time, status, db: Session):
     try:
-        # Convert numpy array to list of floats
-        if isinstance(embedding, np.ndarray):
-            embedding = embedding.astype(float).flatten().tolist()  # Ensure flat float list
+        # # Convert numpy array to list of floats
+        # if isinstance(embedding, np.ndarray):
+        #     embedding = embedding.astype(float).flatten().tolist()  # Ensure flat float list
 
         db.execute(text("""
             INSERT INTO anti_theft (file_name, face_image, embedding, create_date, detection_time, status) 
@@ -130,7 +133,7 @@ async def detect_faces(image: UploadFile = File(...), db: Session = Depends(get_
                 face_base64 = base64.b64encode(buffer).decode('utf-8')
                 # face_base64 = base64.b64encode(cv2.imencode('.jpg', face_crop)[1]).decode('utf-8')
                 timestamp = db.execute(text("SELECT NOW() AT TIME ZONE 'Asia/Dhaka';")).fetchone()[0]
-                update_face_in_db(image.filename, face_base64, result, timestamp, status=1, db=db)
+                update_face_in_db(image.filename, face_base64, result["features"], timestamp, status=1, db=db)
 
     return {"image": image.filename, "message": "Cropped face processed and saved"}
 
@@ -138,7 +141,7 @@ async def detect_faces(image: UploadFile = File(...), db: Session = Depends(get_
 @app.get("/get-all-data", response_model=List[Dict])
 def get_all_anti_theft_data(db: Session = Depends(get_db)):
     try:
-        result = db.execute(text("SELECT id, embedding FROM anti_theft"))
+        result = db.execute(text("SELECT id, file_name, embedding FROM anti_theft"))
         rows = result.fetchall()
         # Convert rows to list of dictionaries
         return [dict(row._mapping) for row in rows]
@@ -212,9 +215,9 @@ async def detect_faces(video: UploadFile = File(...), db: Session = Depends(get_
                     #     break
 
                     # Show frame with bounding boxes and scores
-                    cv2.imshow("Face Detection", frame)
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        break
+                    # cv2.imshow("Face Detection", frame)
+                    # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     break
 
                 frame_count += 1
 
