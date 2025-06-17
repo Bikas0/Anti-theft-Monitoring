@@ -10,4 +10,7 @@ FEATURE_EXTRACTOR_URL=http://features:8081/extract-features
 
 ```bash
 https://hub.docker.com/r/bikas0/anti-theft-monitoring
+                or
+# Pull the image from Docker Hub:
+docker pull bikas0/anti-theft-monitoring
 ```
